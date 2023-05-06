@@ -28,6 +28,10 @@ class DictProcessor(object):
         response = requests.get(url=self.dict_url, params=params)
         assert response.status_code == 200
 
+        if not len(response.json()["def"]):
+            return None, None
+
+
         ts = ''
         if "ts" in response.json()["def"][0]:
             ts = response.json()["def"][0]["ts"]
@@ -36,8 +40,16 @@ class DictProcessor(object):
 
         return ts, tr
 
+    def reformat_for_md(self, text, chars):
+        for chr in chars:
+            text = text.replace(chr, '\\' + chr)
+        return text
+
     def get_dict_examples(self, text: str):
         ts, tr = self.get_dict_translate(text)
+        if not ts and not tr:
+            return None, None
+
         buffer = BytesIO()
         c = pycurl.Curl()
         c.setopt(c.URL, self.dict_url_ex
@@ -56,16 +68,19 @@ class DictProcessor(object):
                 continue
             tr_list.append(example["translation"]["text"])
 
+        if not len(res):
+            return None, None
+
         en_word = res[0]['text']
         res_head = '✅ *' + en_word + '* \[' + ts + '\] — _' + ', '.join(tr_list) + '_\n\n'
 
         for j, example in enumerate(res):
             if "text" not in example["translation"]:
                 continue
-            res_head += '▶️ *' + en_word + '* — _' + example["translation"]["text"] + '_\n'
+            res_head += '▶️ *' + en_word + '* — _' + example["translation"]["text"] + '_\n ____'
             for i, ex in enumerate(example['examples']):
-                ex_0 = ex['src'].replace('<', '*').replace('>', '*').replace('-', '\-').replace('.', '\.').replace('!', '\!')
-                ds_0 = ex['dst'].replace('<', '*').replace('>', '*').replace('-', '\-').replace('.', '\.').replace('!', '\!')
+                ex_0 = self.reformat_for_md(ex['src'].replace('<', '*').replace('>', '*'), ['-', '.', '!', '(', ')'])
+                ds_0 = self.reformat_for_md(ex['dst'].replace('<', '*').replace('>', '*'), ['-', '.', '!', '(', ')'])
 
                 if ds_0[0] == "\\" and ds_0[1] == "-":
                     ds_0 = ds_0[3:]
@@ -81,11 +96,41 @@ class DictProcessor(object):
                 if i == 1:
                  break
 
-            # if j == 2:
-            #     break
+            if j == 4:
+                break
 
-        return res_head
+        return res_head, ', '.join(tr_list)
 
+    def get_dict(self, text: str):
+        ts, tr = self.get_dict_translate(text)
+        if not ts and not tr:
+            return None, None
+
+        buffer = BytesIO()
+        c = pycurl.Curl()
+        c.setopt(c.URL, self.dict_url_ex
+                 + '?srv=tr-text&lang={}&src={}'.format(self.lang, text))
+        c.setopt(c.WRITEDATA, buffer)
+        c.setopt(c.CAINFO, certifi.where())
+        c.perform()
+        c.close()
+        body = buffer.getvalue()
+        body_decoded = body.decode('utf-8')
+        res = json.loads(body_decoded)["result"]
+
+        tr_list = []
+        for example in res:
+            if "text" not in example["translation"]:
+                continue
+            tr_list.append(example["translation"]["text"])
+
+        if not len(res):
+            return None, None
+
+        en_word = res[0]['text']
+        res_head = '✅ *' + en_word + '* \[' + ts + '\] — _' + ', '.join(tr_list) + '_\n\n'
+
+        return res_head, ', '.join(tr_list)
 
 if __name__ == "__main__":
     from rich.markdown import Markdown
