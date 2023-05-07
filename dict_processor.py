@@ -1,7 +1,11 @@
+import os
+import shutil
+
 import pycurl
 import certifi
 import json
 import configparser
+import wget
 
 from io import BytesIO
 
@@ -49,19 +53,14 @@ class DictProcessor(object):
         ts, tr = self.get_dict_translate(text)
         if not ts and not tr:
             return None, None
-
-        buffer = BytesIO()
-        c = pycurl.Curl()
-        c.setopt(c.URL, self.dict_url_ex
-                 + '?srv=tr-text&lang={}&src={}'.format(self.lang, text))
-        c.setopt(c.WRITEDATA, buffer)
-        c.setopt(c.CAINFO, certifi.where())
-        c.perform()
-        c.close()
-        body = buffer.getvalue()
-        body_decoded = body.decode('utf-8')
-        res = json.loads(body_decoded)["result"]
-
+        url = "\"" + self.dict_url_ex + '?srv=tr-text&lang={}&src={}'.format(self.lang, text) + "\""
+        url_comm = 'wget -X GET ' + url + ' -O query.json'
+        print(url_comm)
+        os.system(url_comm)
+        with open("query.json", 'rb') as f:
+            res = json.load(f)['result']
+            os.remove('query.json')
+        print(res)
         tr_list = []
         for example in res:
             if "text" not in example["translation"]:
@@ -116,6 +115,7 @@ class DictProcessor(object):
         c.close()
         body = buffer.getvalue()
         body_decoded = body.decode('utf-8')
+        print(body_decoded)
         res = json.loads(body_decoded)["result"]
 
         tr_list = []
