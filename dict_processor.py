@@ -1,7 +1,6 @@
 import os
 import shutil
 
-import pycurl
 import certifi
 import json
 import configparser
