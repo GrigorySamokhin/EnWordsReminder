@@ -112,19 +112,57 @@ class DictProcessor(object):
             res = json.load(f)['result']
             os.remove('query.json')
 
-        tr_list = []
+        tr_list_n = []
+        tr_list_adj = []
+        tr_list_vrb = []
+        tr_list_adv = []
         for example in res:
             if "text" not in example["translation"]:
                 continue
-            tr_list.append(example["translation"]["text"])
+            if example["pos"]["code"] == "nn":
+                tr_list_n.append(example["translation"]["text"])
+            if example["pos"]["code"] == "adj":
+                tr_list_adj.append(example["translation"]["text"])
+            if example["pos"]["code"] == "adv":
+                tr_list_adv.append(example["translation"]["text"])
+            if example["pos"]["code"] == "vrb":
+                tr_list_vrb.append(example["translation"]["text"])
 
         if not len(res):
             return None, None
 
         en_word = res[0]['text']
-        res_head = '✅ *' + en_word + '* \[' + ts + '\] — _' + ', '.join(tr_list) + '_\n\n'
+        if ts == "":
+            ts = en_word
+        res_head = '✅ *' + en_word + '* \[' + ts + '\]\n'
 
-        return res_head, ', '.join(tr_list)
+        len_sort_pref = sorted({
+            'adj': len(tr_list_adj),
+            'adv': len(tr_list_adv),
+            'vrb': len(tr_list_vrb),
+            'noun': len(tr_list_n)})
+
+        val_sort_pref = {
+            'adj': tr_list_adj,
+            'adv': tr_list_adv,
+            'vrb': tr_list_vrb,
+            'noun': tr_list_n}
+
+        for pref in reversed(len_sort_pref):
+            if len(val_sort_pref[pref]):
+                res_head += '\n`{0}`\n_'.format(pref) + ', '.join(val_sort_pref[pref]) + '_\n'
+
+
+        # if len(tr_list_n):
+        #     res_head += '\n\n`noun`\n_' + ', '.join(tr_list_n) + '_\n'
+        # if len(tr_list_adj):
+        #     res_head += '\n\n`adj`\n_' + ', '.join(tr_list_adj) + '_\n'
+        # if len(tr_list_adv):
+        #     res_head += '\n\n`adv`\n_' + ', '.join(tr_list_adv) + '_\n'
+        # if len(tr_list_vrb):
+        #     res_head += '\n\n`vrb`\n_' + ', '.join(tr_list_vrb) + '_\n'
+
+        return res_head, ', '.join(tr_list_n)
 
 if __name__ == "__main__":
     from rich.markdown import Markdown

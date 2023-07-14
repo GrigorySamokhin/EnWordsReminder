@@ -19,5 +19,5 @@ RUN pip install -r ./enwords/requirments.txt
 COPY ./ /enwords/
 
 WORKDIR enwords
-EXPORT CURLOPT_SSLVERSION CURL_SSLVERSION_MAX_TLSv1_2
+#EXPORT CURLOPT_SSLVERSION CURL_SSLVERSION_MAX_TLSv1_2
 CMD ["python3", "bot.py"]
