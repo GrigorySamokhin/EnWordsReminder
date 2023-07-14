@@ -48,7 +48,10 @@ async def command_transcription_handle(message: Message, bot: Bot) -> None:
 async def command_start_handle(message: Message, bot: Bot, apscheduler: AsyncIOScheduler) -> None:
     word = message.text.split(" ")[1:]
     delete_all = False
-    if ' '.join(word) == 'all' or not len(word):
+    if not len(word):
+        await bot.send_message(message.chat.id, text="Use key `/remove <word>` or `/remove all`\.")
+        return
+    if ' '.join(word) == 'all':
         for job in apscheduler.get_jobs():
             id_word, id_chat, id_uuid = job.id.split('_')
             if int(id_chat) == message.chat.id:

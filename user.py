@@ -1,6 +1,7 @@
 """
     User class.
 """
+from random import random
 
 users = []
 
@@ -23,7 +24,15 @@ class User(object):
     def __init__(self):
         self.edited = False
         self.id = 0
-        self.timings_repeat = [60, 180, 360, 720, 1240, 2480, 4520]
+        self.timings_repeat = [
+            random.randint(720 - 50, 720 + 50),
+            random.randint(1440 - 100, 1440 + 100),
+            random.randint(2880 - 200, 2880 + 200),
+            random.randint(4320 - 200, 4320 + 200),
+            random.randint(5760 - 200, 5760 + 200),
+            random.randint(7200 - 200, 7200 + 200),
+            random.randint(8640 - 200, 8640 + 200)
+            ]
         self.words = []
         self.words_md = []
 
